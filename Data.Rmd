@@ -1,0 +1,119 @@
+---
+title: "Explanatory Data Analysis Project 2"
+output: html_document
+---
+
+```{r}
+summarySCC <- readRDS("./NEI_data/summarySCC_PM25.rds")
+SCC <- readRDS("./NEI_data/Source_Classification_Code.rds")
+
+```
+
+
+Question #1: Have total emissions from PM2.5 decreased in the United States from 1999 to 2008? Using the base plotting system, make a plot showing the total PM2.5 emission from all sources for each of the years 1999, 2002, 2005, and 2008.
+
+```{r}
+summarySCC <- readRDS("./NEI_data/summarySCC_PM25.rds")
+SCC <- readRDS("./NEI_data/Source_Classification_Code.rds")
+annual_emissions <- aggregate(Emissions ~ year,summarySCC,sum)
+png("Plot 1.png")
+barplot(height=annual_emissions$Emissions/1000,names.arg = annual_emissions$year,col = (annual_emissions$year)*3,xlab="Year",ylab="PM2.5 Emission",main="Annuual Emission of PM2.5")
+dev.off()
+```
+Question #2: Have total emissions from PM2.5 decreased in the Baltimore City, Maryland ( fips == “24510”) from 1999 to 2008? Use the base plotting system to make a plot answering this question.
+```{r}
+summarySCC <- readRDS("./NEI_data/summarySCC_PM25.rds")
+SCC <- readRDS("./NEI_data/Source_Classification_Code.rds")
+baltimoredata <- summarySCC[summarySCC$fips=="24510",]
+baltimoredata <- aggregate(Emissions ~ year, baltimoredata,sum)
+png("Plot 2.png")
+barplot(height=baltimoredata$Emissions/1000,names.arg = baltimoredata$year,col = (annual_emissions$year)*5.9,xlab="Year",ylab="PM2.5 Emission",main="Annuual Emission of PM2.5 of Baltimore")
+dev.off()
+```
+
+Question #3: Of the four types of sources indicated by the (point, nonpoint, onroad, nonroad) variable, which of these four sources have seen decreases in emissions from 19992008 for Baltimore City? Which have seen increases in emissions from 1999-2008? Use the ggplot2 plotting system to make a plot answer this question.
+```{r}
+library("ggplot2")
+
+summarySCC <- readRDS("./NEI_data/summarySCC_PM25.rds")
+SCC <- readRDS("./NEI_data/Source_Classification_Code.rds")
+
+baltimoredata <- summarySCC[summarySCC$fips=="24510",]
+baltimoredata <- aggregate(Emissions ~ year + type, baltimoredata,sum)
+png("Plot 3.png")
+ggplot(data=baltimoredata,aes(x=factor(year),y=Emissions,fill=type)) + geom_bar(stat="Identity") + xlab("Year") + ylab("Total Emision") + ggtitle("Total Emissions of Baltimore from 1999 to 2008")
+dev.off()
+```
+Question #4: Across the United States, how have emissions from coal combustion-related sources changed from 1999 to 2008?
+```{r}
+library("dplyr")
+library("ggplot2")
+summarySCC <- readRDS("./NEI_data/summarySCC_PM25.rds")
+SCC <- readRDS("./NEI_data/Source_Classification_Code.rds")
+
+mergedData <- merge(summarySCC,SCC, by="SCC")
+
+coal <- grepl(pattern="coal",mergedData$EI.Sector,ignore.case = TRUE)
+
+NEISCCCoal <- mergedData[coal,]
+
+coalData <- aggregate(Emissions ~ year, NEISCCCoal,FUN=sum)
+
+png("Plot 4.png")
+
+ggplot(coalData,aes(factor(year),Emissions/10000,fill=year,label=round(Emissions/10000,2))) +
+  geom_bar(stat="Identity") + 
+  geom_label(aes(fill=year),colour="white",fontface="bold") +
+  xlab("Year") + 
+  ylab("Total PM2.5 Emissiosn") + 
+  ggtitle("Total Emissions of Coal Sources from 1999 to 2008")
+
+dev.off()
+
+```
+
+Question #5 and #6: How have emissions from motor vehicle sources changed from 1999–2008 in Baltimore City? Compare emissions from motor vehicle sources in Baltimore City with emissions from motor vehicle sources in Los Angeles County, California (fips == "06037"). Which city has seen greater changes over time in motor vehicle emissions?
+
+```{r}
+library("dplyr")
+library("ggplot2")
+summarySCC            <- readRDS("./NEI_data/summarySCC_PM25.rds")
+SCC <- readRDS("./NEI_data/Source_Classification_Code.rds")
+
+mergedData            <- merge(summarySCC,SCC, by="SCC")
+
+vehicle               <- grepl(pattern="vehicle",mergedData$EI.Sector,ignore.case = TRUE)
+NEISCCVehicle         <- mergedData[vehicle,]
+
+baltimoreVehicles      <- NEISCCVehicle[NEISCCVehicle$fips=="24510",]
+baltimoreVehicles$City <- "Baltimore City"
+losangelesVehicles     <- NEISCCVehicle[NEISCCVehicle$fips=="06037",]
+losangelesVehicles$City<- "Los Angeles City"
+vehicleData            <- rbind(baltimoreVehicles,losangelesVehicles)
+
+png("Plot 5 and 6.png")
+ggplot(vehicleData,aes(factor(year),round(Emissions/100,2), fill=City)) +
+  geom_bar(stat="identity") +
+  facet_grid(.~City) +
+  xlab("Year") + 
+  ylab("Total PM2.5 Emissiosn") + 
+  ggtitle("Vehicle Sources Emission from 1999 to 2008")
+
+dev.off()
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
